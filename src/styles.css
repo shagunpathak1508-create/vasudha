@@ -63,25 +63,29 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
-  --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  /* Vasudha forest design system */
+  --background: oklch(0.18 0.04 155);
+  --foreground: oklch(0.97 0.02 130);
+  --card: oklch(0.24 0.05 150 / 0.55);
+  --card-foreground: oklch(0.97 0.02 130);
+  --popover: oklch(0.22 0.05 150);
+  --popover-foreground: oklch(0.97 0.02 130);
+  --primary: oklch(0.45 0.13 145); /* #1B5E20 forest */
+  --primary-foreground: oklch(0.98 0.02 130);
+  --secondary: oklch(0.62 0.16 145); /* #43A047 nature */
+  --secondary-foreground: oklch(0.15 0.04 150);
+  --accent: oklch(0.81 0.13 145); /* #81C784 light */
+  --accent-foreground: oklch(0.18 0.04 155);
+  --muted: oklch(0.28 0.04 150);
+  --muted-foreground: oklch(0.78 0.03 140);
+  --earth-blue: oklch(0.48 0.17 255); /* #1565C0 */
+  --leaf-glow: oklch(0.85 0.18 140);
+  --sunlight: oklch(0.93 0.12 90);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
-  --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --border: oklch(0.97 0.02 130 / 0.12);
+  --input: oklch(0.97 0.02 130 / 0.15);
+  --ring: oklch(0.81 0.13 145);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -140,5 +144,72 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Poppins", system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+@theme inline {
+  --color-earth-blue: var(--earth-blue);
+  --color-leaf-glow: var(--leaf-glow);
+  --color-sunlight: var(--sunlight);
+  --font-display: "Poppins", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+/* Vasudha visual utilities */
+@utility glass-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--color-accent) 18%, transparent),
+    color-mix(in oklab, var(--color-primary) 12%, transparent)
+  );
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid color-mix(in oklab, var(--color-accent) 30%, transparent);
+  box-shadow:
+    0 10px 40px -10px color-mix(in oklab, #000 60%, transparent),
+    inset 0 1px 0 color-mix(in oklab, white 15%, transparent);
+}
+
+@utility glow-primary {
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-accent) 40%, transparent),
+    0 10px 40px -5px color-mix(in oklab, var(--color-secondary) 60%, transparent),
+    0 0 60px color-mix(in oklab, var(--color-leaf-glow) 30%, transparent);
+}
+
+@utility text-gradient-leaf {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-sunlight));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes drift {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.6; }
+  100% { transform: translate(40px, -120vh) rotate(360deg); opacity: 0; }
+}
+@keyframes pulse-glow {
+  0%, 100% { filter: drop-shadow(0 0 30px color-mix(in oklab, var(--color-leaf-glow) 50%, transparent)); }
+  50% { filter: drop-shadow(0 0 60px color-mix(in oklab, var(--color-sunlight) 60%, transparent)); }
+}
+
+@utility animate-spin-slow { animation: spin-slow 80s linear infinite; }
+@utility animate-float-y { animation: float-y 6s ease-in-out infinite; }
+@utility animate-pulse-glow { animation: pulse-glow 6s ease-in-out infinite; }
 }
