@@ -212,4 +212,3 @@
 @utility animate-spin-slow { animation: spin-slow 80s linear infinite; }
 @utility animate-float-y { animation: float-y 6s ease-in-out infinite; }
 @utility animate-pulse-glow { animation: pulse-glow 6s ease-in-out infinite; }
-}
