@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import forestBg from "@/assets/forest-bg.jpg";
 import earth from "@/assets/earth.png";
 import { ParticleField } from "./ParticleField";
+
 
 export function Hero() {
   return (
@@ -29,24 +30,14 @@ export function Hero() {
       <div className="relative z-10 mx-auto grid w-full max-w-7xl gap-12 px-5 py-12 sm:px-8 lg:grid-cols-2 lg:gap-8">
         {/* Text */}
         <div className="flex flex-col justify-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            className="glass-card mb-6 inline-flex w-fit items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-accent"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            AI-powered sustainability companion
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.1 }}
             className="font-display text-5xl leading-[1.05] font-bold sm:text-6xl lg:text-7xl"
           >
-            Understand your impact.{" "}
-            <span className="text-gradient-leaf">Shape a greener future.</span>
+            <span className="block">For the Earth</span>
+            <span className="text-gradient-leaf">that gives us everything.</span>
           </motion.h1>
 
           <motion.p
@@ -55,9 +46,9 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.25 }}
             className="mt-6 max-w-xl text-lg text-muted-foreground sm:text-xl"
           >
-            Track your carbon footprint, learn sustainable habits, and watch your digital
-            Earth transform through your choices.
+            Understand your impact, build sustainable habits, and watch your digital Earth respond to every choice you make.
           </motion.p>
+
 
           <motion.div
             initial={{ opacity: 0, y: 24 }}

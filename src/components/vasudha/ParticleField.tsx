@@ -1,16 +1,23 @@
 import { useMemo } from "react";
 
+// Deterministic pseudo-random generator so SSR and client produce identical
+// particle positions, preventing React hydration mismatches.
+function seededRandom(seed: number) {
+  const value = (Math.sin(seed * 12.9898) * 43758.5453) % 1;
+  return value < 0 ? value + 1 : value;
+}
+
 export function ParticleField({ count = 24 }: { count?: number }) {
   const particles = useMemo(
     () =>
       Array.from({ length: count }).map((_, i) => ({
         id: i,
-        left: Math.random() * 100,
-        size: 6 + Math.random() * 14,
-        delay: Math.random() * 18,
-        duration: 16 + Math.random() * 18,
-        opacity: 0.25 + Math.random() * 0.5,
-        kind: Math.random() > 0.5 ? "leaf" : "dot",
+        left: seededRandom(i * 7 + 13) * 100,
+        size: 6 + seededRandom(i * 11 + 3) * 14,
+        delay: seededRandom(i * 5 + 97) * 18,
+        duration: 16 + seededRandom(i * 17 + 31) * 18,
+        opacity: 0.25 + seededRandom(i * 23 + 61) * 0.5,
+        kind: seededRandom(i * 29 + 101) > 0.5 ? "leaf" : "dot",
       })),
     [count],
   );

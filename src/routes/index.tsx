@@ -7,17 +7,17 @@ import { EarthStates } from "@/components/vasudha/EarthStates";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Vasudha — Understand your impact. Shape a greener future." },
+      { title: "Vasudha — For the Earth that gives us everything." },
       {
         name: "description",
         content:
-          "Vasudha is an AI sustainability companion. Track your carbon footprint, learn green habits, and watch your digital Earth transform.",
+          "Vasudha is a sustainability companion for a living Earth. Track your impact, learn green habits, and watch your digital Earth transform.",
       },
-      { property: "og:title", content: "Vasudha — Your AI sustainability companion" },
+      { property: "og:title", content: "Vasudha — For the Earth that gives us everything." },
       {
         property: "og:description",
         content:
-          "Track, learn, and shape a greener future. Watch your digital Earth respond to every choice.",
+          "Understand your impact, build sustainable habits, and shape a thriving future for the planet.",
       },
     ],
   }),
