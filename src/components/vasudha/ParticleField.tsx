@@ -1,16 +1,23 @@
 import { useMemo } from "react";
 
+// Deterministic pseudo-random generator so SSR and client produce identical
+// particle positions, preventing React hydration mismatches.
+function seededRandom(seed: number) {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453123;
+  return x - Math.floor(x);
+}
+
 export function ParticleField({ count = 24 }: { count?: number }) {
   const particles = useMemo(
     () =>
       Array.from({ length: count }).map((_, i) => ({
         id: i,
-        left: Math.random() * 100,
-        size: 6 + Math.random() * 14,
-        delay: Math.random() * 18,
-        duration: 16 + Math.random() * 18,
-        opacity: 0.25 + Math.random() * 0.5,
-        kind: Math.random() > 0.5 ? "leaf" : "dot",
+        left: `${(seededRandom(i * 7 + 13) * 100).toFixed(2)}%`,
+        size: `${(6 + seededRandom(i * 11 + 3) * 14).toFixed(2)}px`,
+        delay: `${(seededRandom(i * 5 + 97) * 18).toFixed(2)}s`,
+        duration: `${(16 + seededRandom(i * 17 + 31) * 18).toFixed(2)}s`,
+        opacity: `${(0.25 + seededRandom(i * 23 + 61) * 0.5).toFixed(3)}`,
+        kind: seededRandom(i * 29 + 101) > 0.5 ? "leaf" : "dot",
       })),
     [count],
   );
@@ -22,11 +29,15 @@ export function ParticleField({ count = 24 }: { count?: number }) {
           key={p.id}
           className="absolute bottom-[-10vh]"
           style={{
-            left: `${p.left}%`,
+            left: p.left,
             width: p.size,
             height: p.size,
             opacity: p.opacity,
-            animation: `drift ${p.duration}s linear ${p.delay}s infinite`,
+            animationName: "drift",
+            animationDuration: p.duration,
+            animationTimingFunction: "linear",
+            animationDelay: p.delay,
+            animationIterationCount: "infinite",
           }}
         >
           {p.kind === "leaf" ? (

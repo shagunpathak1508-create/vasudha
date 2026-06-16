@@ -9,8 +9,8 @@ const features = [
   },
   {
     icon: Brain,
-    title: "AI Eco Coach",
-    desc: "A personal companion that nudges you toward greener habits, in your own pace.",
+    title: "Personalized Eco Coach",
+    desc: "Gentle, personalized guidance that nudges you toward greener habits, at your own pace.",
   },
   {
     icon: Globe,
