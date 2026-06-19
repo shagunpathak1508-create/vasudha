@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import forestBg from "@/assets/forest-bg.jpg";
 import earth from "@/assets/earth.png";
 import { ParticleField } from "./ParticleField";
@@ -56,13 +57,21 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="mt-10 flex flex-wrap items-center gap-4"
           >
-            <button className="group glow-primary relative inline-flex items-center gap-2 rounded-full bg-secondary px-7 py-4 text-base font-semibold text-secondary-foreground transition hover:scale-[1.03] hover:bg-accent">
+            <Link
+              to="/onboarding"
+              className="group glow-primary relative inline-flex items-center gap-2 rounded-full bg-secondary px-7 py-4 text-base font-semibold text-secondary-foreground transition hover:scale-[1.03] hover:bg-accent"
+              aria-label="Start your Earth journey — sustainability onboarding"
+            >
               Start My Earth Journey
               <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-            </button>
-            <button className="glass-card rounded-full px-6 py-4 text-base font-semibold text-foreground transition hover:bg-white/10">
+            </Link>
+            <Link
+              to="/learn"
+              className="glass-card rounded-full px-6 py-4 text-base font-semibold text-foreground transition hover:bg-white/10"
+              aria-label="Learn what a carbon footprint is"
+            >
               What is a Carbon Footprint?
-            </button>
+            </Link>
           </motion.div>
 
           <motion.div

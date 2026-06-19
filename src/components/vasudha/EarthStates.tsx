@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "@tanstack/react-router";
 import thriving from "@/assets/earth-thriving.png";
 import balanced from "@/assets/earth-balanced.png";
 import struggling from "@/assets/earth-struggling.png";
@@ -106,9 +107,13 @@ export function EarthStates() {
             Join thousands shaping a thriving Vasudha — one habit at a time.
           </p>
         </div>
-        <button className="glow-primary inline-flex items-center gap-2 rounded-full bg-secondary px-7 py-4 text-base font-semibold text-secondary-foreground transition hover:scale-[1.03] hover:bg-accent">
+        <Link
+          to="/onboarding"
+          className="glow-primary inline-flex items-center gap-2 rounded-full bg-secondary px-7 py-4 text-base font-semibold text-secondary-foreground transition hover:scale-[1.03] hover:bg-accent"
+          aria-label="Begin your Earth journey"
+        >
           Begin Your Journey
-        </button>
+        </Link>
       </motion.div>
     </section>
   );
