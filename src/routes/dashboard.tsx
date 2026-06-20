@@ -5,10 +5,17 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
   AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
+import { TrendingUp, Star, Zap, Target, Globe2, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/vasudha/AppShell";
 import { I18nProvider, useTranslation } from "@/lib/i18n";
 import { getCachedProfile, getCachedAnswers } from "@/lib/user";
-import { type EarthProfile, type OnboardingAnswers, generateEarthProfile } from "@/lib/carbon";
+import {
+  type EarthProfile,
+  type OnboardingAnswers,
+  generateEarthProfile,
+  generatePersonalizedInsights,
+  type PersonalizedInsights,
+} from "@/lib/carbon";
 import thriving from "@/assets/earth-thriving.png";
 import balanced from "@/assets/earth-balanced.png";
 import struggling from "@/assets/earth-struggling.png";
@@ -17,7 +24,7 @@ export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
       { title: "Earth Dashboard — Vasudha" },
-      { name: "description", content: "Track your Vasudha Health Index, top emission sources, and recommended eco actions." },
+      { name: "description", content: "Track your Vasudha Health Index, personal Earth story, and answer-specific eco recommendations." },
     ],
   }),
   component: () => (
@@ -31,7 +38,7 @@ export const Route = createFileRoute("/dashboard")({
 
 const EARTH_IMGS = { thriving, balanced, struggling, critical: struggling };
 
-// ─── Fake weekly trend (real data comes from Firestore history) ───────────────
+// ─── Fake weekly trend ────────────────────────────────────────────────────────
 function generateWeeklyData(score: number) {
   return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => ({
     day,
@@ -39,7 +46,7 @@ function generateWeeklyData(score: number) {
   }));
 }
 
-// ─── Radial Health Gauge ──────────────────────────────────────────────────────
+// ─── Health Gauge ─────────────────────────────────────────────────────────────
 function HealthGauge({ score, state }: { score: number; state: string }) {
   const r = 70;
   const circ = 2 * Math.PI * r;
@@ -62,15 +69,7 @@ function HealthGauge({ score, state }: { score: number; state: string }) {
     <div className="flex flex-col items-center gap-3">
       <div className="relative h-44 w-44">
         <svg className="h-full w-full" viewBox="0 0 160 160" aria-hidden="true">
-          {/* Background arc */}
-          <path
-            d="M 20 140 A 70 70 0 0 1 140 140"
-            fill="none"
-            stroke="var(--color-border)"
-            strokeWidth="10"
-            strokeLinecap="round"
-          />
-          {/* Score arc */}
+          <path d="M 20 140 A 70 70 0 0 1 140 140" fill="none" stroke="var(--color-border)" strokeWidth="10" strokeLinecap="round" />
           <motion.path
             d="M 20 140 A 70 70 0 0 1 140 140"
             fill="none"
@@ -82,26 +81,18 @@ function HealthGauge({ score, state }: { score: number; state: string }) {
             initial={{ strokeDashoffset: half }}
             transition={{ duration: 1.2, ease: "easeOut" }}
           />
-          {/* Glow filter */}
-          <defs>
-            <filter id="gaugeGlow">
-              <feGaussianBlur stdDeviation="3" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
-            </filter>
-          </defs>
         </svg>
-        {/* Centre score */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pb-4">
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="font-display text-5xl font-bold text-foreground"
+            className="font-display text-5xl font-bold"
             aria-label={`Vasudha Health Index: ${score} out of 100`}
           >
             {score}
           </motion.span>
-          <span className="text-xs text-muted-foreground">/100</span>
+          <span className="text-xs" style={{ color: "var(--color-muted-foreground)" }}>/100</span>
         </div>
       </div>
       <div className="font-display text-lg font-bold">{stateLabels[state]}</div>
@@ -109,20 +100,176 @@ function HealthGauge({ score, state }: { score: number; state: string }) {
   );
 }
 
-// ─── Dashboard Page ────────────────────────────────────────────────────────────
+// ─── Earth Status Summary ─────────────────────────────────────────────────────
+function EarthStatusSummary({ summary }: { summary: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      className="glass-card w-full rounded-2xl p-5"
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <Globe2 className="h-4 w-4" style={{ color: "var(--color-accent)" }} />
+        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--color-accent)" }}>
+          Earth Status
+        </p>
+      </div>
+      <p className="text-sm leading-relaxed" style={{ color: "var(--color-foreground)" }}>
+        {summary}
+      </p>
+    </motion.div>
+  );
+}
+
+// ─── Insight Card ─────────────────────────────────────────────────────────────
+function InsightTile({
+  delay,
+  icon,
+  label,
+  title,
+  body,
+  accentColor,
+  action,
+  actionLabel,
+}: {
+  delay: number;
+  icon: React.ReactNode;
+  label: string;
+  title: string;
+  body: string;
+  accentColor: string;
+  action?: string;
+  actionLabel?: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      className="glass-card rounded-2xl p-5 flex flex-col gap-3"
+    >
+      <div className="flex items-center gap-2" style={{ color: accentColor }}>
+        {icon}
+        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
+      </div>
+      <p className="font-display text-base font-bold leading-snug">{title}</p>
+      <p className="text-xs leading-relaxed flex-1" style={{ color: "var(--color-muted-foreground)" }}>{body}</p>
+      {action && actionLabel && (
+        <Link
+          to={action as "/simulator" | "/challenges" | "/coach"}
+          className="inline-flex items-center gap-1 text-xs font-semibold transition-colors hover:opacity-80"
+          style={{ color: accentColor }}
+        >
+          {actionLabel} <ArrowRight className="h-3 w-3" />
+        </Link>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── Personalized Recommended Actions ────────────────────────────────────────
+function PersonalizedActions({
+  insights,
+  profile,
+}: {
+  insights: PersonalizedInsights;
+  profile: EarthProfile;
+}) {
+  const actions = [
+    {
+      icon: "🚌",
+      title: insights.biggestImpactArea === "transport"
+        ? "Switch Your Main Transport"
+        : insights.biggestImpactArea === "food"
+          ? "Try Plant-Based Meals"
+          : insights.biggestImpactArea === "electricity"
+            ? "Optimise Energy Use"
+            : insights.biggestImpactArea === "shopping"
+              ? "Shop More Mindfully"
+              : "Improve Your Recycling",
+      desc: insights.easiestWinTip,
+      action: insights.biggestImpactArea === "transport" ? "/simulator"
+        : insights.biggestImpactArea === "food" ? "/challenges"
+        : "/coach",
+    },
+    {
+      icon: profile.state === "thriving" ? "🌟" : "🌱",
+      title: profile.state === "thriving"
+        ? "Inspire Others Around You"
+        : "Start One Eco Challenge",
+      desc: profile.state === "thriving"
+        ? "You're already thriving — share your habits and join a community challenge to amplify your impact."
+        : `Your ${insights.bestAreaLabel} habits are strong. Build on that momentum with a weekly eco challenge.`,
+      action: "/challenges",
+    },
+    {
+      icon: "❓",
+      title: "Ask Your Eco Coach",
+      desc: `Get personalised advice on improving your ${insights.biggestImpactLabel.toLowerCase()} habits from our AI coach.`,
+      action: "/coach",
+    },
+  ];
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-3">
+      {actions.map((item, i) => (
+        <Link
+          key={i}
+          to={item.action as "/simulator" | "/challenges" | "/coach"}
+          className="glass-card group flex items-start gap-4 rounded-2xl p-5 transition hover:bg-white/5"
+          aria-label={item.title}
+        >
+          <span className="text-3xl" aria-hidden="true">{item.icon}</span>
+          <div>
+            <p className="font-display text-sm font-bold group-hover:text-accent transition-colors">{item.title}</p>
+            <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--color-muted-foreground)" }}>{item.desc}</p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+// ─── Dashboard Page ───────────────────────────────────────────────────────────
 
 function DashboardPage() {
   const { t } = useTranslation();
   const [profile, setProfile] = useState<EarthProfile | null>(null);
+  const [answers, setAnswers] = useState<OnboardingAnswers | null>(null);
+  const [insights, setInsights] = useState<PersonalizedInsights | null>(null);
   const [weeklyData, setWeeklyData] = useState<ReturnType<typeof generateWeeklyData>>([]);
 
   useEffect(() => {
-    const cached = getCachedProfile<EarthProfile>();
-    if (cached) {
-      setProfile(cached);
-      setWeeklyData(generateWeeklyData(cached.score));
+    const cachedProfile = getCachedProfile<EarthProfile & { _insights?: PersonalizedInsights }>();
+    const cachedAnswers = getCachedAnswers<OnboardingAnswers>();
+
+    if (cachedProfile) {
+      setProfile(cachedProfile);
+      setWeeklyData(generateWeeklyData(cachedProfile.score));
+
+      if (cachedAnswers) {
+        setAnswers(cachedAnswers);
+        const generatedInsights = cachedProfile._insights ?? generatePersonalizedInsights(cachedAnswers, cachedProfile);
+        setInsights(generatedInsights);
+      } else {
+        // No answers cached — use profile topSource for a basic summary
+        const fallbackInsights: PersonalizedInsights = {
+          earthStatusSummary: `Your Earth is ${cachedProfile.state}. Complete onboarding to get fully personalised insights.`,
+          biggestImpactArea: cachedProfile.topSource,
+          biggestImpactLabel: cachedProfile.topSourceLabel,
+          biggestImpactScoreBoost: 8,
+          bestArea: "waste",
+          bestAreaLabel: "Waste & Recycling",
+          easiestWin: cachedProfile.topSource,
+          easiestWinLabel: cachedProfile.topSourceLabel,
+          easiestWinScoreBoost: 5,
+          easiestWinTip: cachedProfile.improvement,
+        };
+        setInsights(fallbackInsights);
+      }
     } else {
-      // Demo profile if no onboarding done
+      // Demo profile
       const demo = generateEarthProfile({
         transport: "public",
         food: "vegetarian",
@@ -130,8 +277,17 @@ function DashboardPage() {
         shopping: "monthly",
         waste: "sometimes",
       });
+      const demoAnswers: OnboardingAnswers = {
+        transport: "public",
+        food: "vegetarian",
+        electricity: "average",
+        shopping: "monthly",
+        waste: "sometimes",
+      };
       setProfile(demo);
+      setAnswers(demoAnswers);
       setWeeklyData(generateWeeklyData(demo.score));
+      setInsights(generatePersonalizedInsights(demoAnswers, demo));
     }
   }, []);
 
@@ -151,36 +307,32 @@ function DashboardPage() {
         aria-hidden="true"
         className="pointer-events-none fixed inset-0"
         style={{
-          background:
-            "radial-gradient(ellipse at 60% 10%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 50%)",
+          background: "radial-gradient(ellipse at 60% 10%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 50%)",
         }}
       />
 
       {/* Page header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-        <p className="text-sm font-semibold uppercase tracking-widest text-accent">
+        <p className="text-sm font-bold uppercase tracking-widest" style={{ color: "var(--color-accent)" }}>
           {t("nav_dashboard")}
         </p>
         <h1 className="mt-1 font-display text-3xl font-bold">{t("dashboard_title")}</h1>
       </motion.div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* ── Health Index ── */}
+        {/* ── Health Index + Earth Image ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="glass-card flex flex-col items-center gap-6 rounded-3xl p-8 lg:col-span-1"
+          className="glass-card flex flex-col items-center gap-5 rounded-3xl p-8 lg:col-span-1"
         >
           <HealthGauge score={profile.score} state={profile.state} />
 
-          {/* Earth image */}
           <div className="relative h-28 w-28">
             <div
               className="absolute inset-0 rounded-full blur-xl"
-              style={{
-                background: `radial-gradient(circle, color-mix(in oklab, var(--color-leaf-glow) 40%, transparent), transparent 70%)`,
-              }}
+              style={{ background: "radial-gradient(circle, color-mix(in oklab, var(--color-leaf-glow) 40%, transparent), transparent 70%)" }}
               aria-hidden="true"
             />
             <img
@@ -190,19 +342,13 @@ function DashboardPage() {
             />
           </div>
 
-          {/* Top source */}
-          <div className="w-full rounded-2xl bg-white/5 p-4 text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-accent">
-              {t("top_source")}
-            </p>
-            <p className="mt-1 font-display text-lg font-bold">{profile.topSourceLabel}</p>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              {profile.improvement}
-            </p>
-          </div>
+          {/* Earth status summary */}
+          {insights && (
+            <EarthStatusSummary summary={insights.earthStatusSummary} />
+          )}
         </motion.div>
 
-        {/* ── Charts column ── */}
+        {/* ── Charts + Insights column ── */}
         <div className="flex flex-col gap-6 lg:col-span-2">
           {/* Weekly Area Chart */}
           <motion.div
@@ -233,53 +379,77 @@ function DashboardPage() {
             </ResponsiveContainer>
           </motion.div>
 
-          {/* Radar Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass-card rounded-3xl p-6"
-            aria-label="Emissions breakdown radar chart"
-          >
-            <p className="mb-4 font-display text-base font-bold">{t("emissions_breakdown")}</p>
-            <ResponsiveContainer width="100%" height={200}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} />
-                <Radar name="Score" dataKey="score" stroke="var(--color-leaf-glow)" fill="var(--color-leaf-glow)" fillOpacity={0.25} strokeWidth={2} />
-              </RadarChart>
-            </ResponsiveContainer>
-          </motion.div>
+          {/* Radar + Insight tiles row */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Radar Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass-card rounded-3xl p-6"
+              aria-label="Emissions breakdown radar chart"
+            >
+              <p className="mb-4 font-display text-base font-bold">{t("emissions_breakdown")}</p>
+              <ResponsiveContainer width="100%" height={180}>
+                <RadarChart data={radarData}>
+                  <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: "var(--color-muted-foreground)", fontSize: 10 }} />
+                  <Radar name="Score" dataKey="score" stroke="var(--color-leaf-glow)" fill="var(--color-leaf-glow)" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </motion.div>
+
+            {/* Personalized Insight tiles */}
+            {insights && (
+              <div className="flex flex-col gap-3">
+                <InsightTile
+                  delay={0.25}
+                  icon={<TrendingUp className="h-3.5 w-3.5" />}
+                  label="Biggest Impact"
+                  title={insights.biggestImpactLabel}
+                  body={`Addressing this could unlock up to +${insights.biggestImpactScoreBoost} VHI points.`}
+                  accentColor="oklch(0.65 0.22 28)"
+                  action="/simulator"
+                  actionLabel="Simulate change"
+                />
+                <InsightTile
+                  delay={0.32}
+                  icon={<Star className="h-3.5 w-3.5" />}
+                  label="Best Area"
+                  title={insights.bestAreaLabel}
+                  body="Your Earth shines brightest here. Keep this habit strong!"
+                  accentColor="var(--color-leaf-glow)"
+                />
+                <InsightTile
+                  delay={0.39}
+                  icon={<Zap className="h-3.5 w-3.5" />}
+                  label="Easiest Win"
+                  title={`+${insights.easiestWinScoreBoost} pts available`}
+                  body={insights.easiestWinTip}
+                  accentColor="var(--color-sunlight)"
+                  action="/coach"
+                  actionLabel="Ask Eco Coach"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ── Recommended Actions ── */}
+        {/* ── Personalized Recommended Actions ── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.28 }}
+          transition={{ delay: 0.4 }}
           className="glass-card rounded-3xl p-6 lg:col-span-3"
         >
           <p className="mb-5 font-display text-base font-bold">{t("recommended_actions")}</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {[
-              { icon: "🚌", title: "Switch to public transport", desc: "Save up to 28% of transport emissions.", action: "/simulator" },
-              { icon: "🥗", title: "Try plant-based meals", desc: "3 days/week = 300 kg CO₂ saved annually.", action: "/challenges" },
-              { icon: "❄️", title: "Raise the AC thermostat", desc: "Every degree = ~6% electricity saving.", action: "/coach" },
-            ].map((item, i) => (
-              <Link
-                key={i}
-                to={item.action as "/simulator" | "/challenges" | "/coach"}
-                className="glass-card group flex items-start gap-4 rounded-2xl p-5 transition hover:bg-white/5"
-                aria-label={item.title}
-              >
-                <span className="text-3xl" aria-hidden="true">{item.icon}</span>
-                <div>
-                  <p className="font-display text-sm font-bold group-hover:text-accent transition-colors">{item.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{item.desc}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+          {insights && profile ? (
+            <PersonalizedActions insights={insights} profile={profile} />
+          ) : (
+            <p className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>
+              Complete onboarding to see personalised recommendations.
+            </p>
+          )}
         </motion.div>
       </div>
     </div>

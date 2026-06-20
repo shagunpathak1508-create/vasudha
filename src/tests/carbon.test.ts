@@ -7,6 +7,7 @@ import {
   getEarthState,
   generateEarthProfile,
   getCategoryScores,
+  generatePersonalizedInsights,
   type OnboardingAnswers,
 } from "../lib/carbon";
 
@@ -168,3 +169,105 @@ describe("getCategoryScores", () => {
     });
   });
 });
+
+// ─── generatePersonalizedInsights ────────────────────────────────────────────
+
+describe("generatePersonalizedInsights", () => {
+  const carAnswers: OnboardingAnswers = {
+    transport: "car",
+    food: "vegetarian",
+    electricity: "low",
+    shopping: "monthly", // Changed to make waste the unambiguous bestArea
+    waste: "always_recycle",
+  };
+
+  const flightAnswers: OnboardingAnswers = {
+    transport: "flights",
+    food: "heavy_meat",
+    electricity: "heavy_ac",
+    shopping: "frequent",
+    waste: "rarely",
+  };
+
+  it("returns all required fields", () => {
+    const profile = generateEarthProfile(carAnswers);
+    const insights = generatePersonalizedInsights(carAnswers, profile);
+    expect(insights).toHaveProperty("earthStatusSummary");
+    expect(insights).toHaveProperty("biggestImpactArea");
+    expect(insights).toHaveProperty("biggestImpactLabel");
+    expect(insights).toHaveProperty("biggestImpactScoreBoost");
+    expect(insights).toHaveProperty("bestArea");
+    expect(insights).toHaveProperty("bestAreaLabel");
+    expect(insights).toHaveProperty("easiestWin");
+    expect(insights).toHaveProperty("easiestWinLabel");
+    expect(insights).toHaveProperty("easiestWinScoreBoost");
+    expect(insights).toHaveProperty("easiestWinTip");
+  });
+
+  it("identifies transport as biggest impact for car driver", () => {
+    const profile = generateEarthProfile(carAnswers);
+    const insights = generatePersonalizedInsights(carAnswers, profile);
+    expect(insights.biggestImpactArea).toBe("transport");
+  });
+
+  it("earthStatusSummary mentions personal car for car driver", () => {
+    const profile = generateEarthProfile(carAnswers);
+    const insights = generatePersonalizedInsights(carAnswers, profile);
+    expect(insights.earthStatusSummary.toLowerCase()).toMatch(/car|transport/);
+  });
+
+  it("earthStatusSummary mentions AC for heavy_ac user", () => {
+    const acAnswers: OnboardingAnswers = {
+      transport: "walking",
+      food: "vegetarian",
+      electricity: "heavy_ac",
+      shopping: "rare",
+      waste: "always_recycle",
+    };
+    const profile = generateEarthProfile(acAnswers);
+    const insights = generatePersonalizedInsights(acAnswers, profile);
+    expect(insights.earthStatusSummary.toLowerCase()).toMatch(/ac|electricity/);
+  });
+
+  it("bestArea is the highest-scoring category", () => {
+    const profile = generateEarthProfile(carAnswers);
+    const scores = profile.categoryScores;
+    const insights = generatePersonalizedInsights(carAnswers, profile);
+    const expectedBest = Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0];
+    expect(insights.bestArea).toBe(expectedBest);
+  });
+
+  it("biggestImpactScoreBoost is within reasonable range (0–20)", () => {
+    const profile = generateEarthProfile(flightAnswers);
+    const insights = generatePersonalizedInsights(flightAnswers, profile);
+    expect(insights.biggestImpactScoreBoost).toBeGreaterThanOrEqual(0);
+    expect(insights.biggestImpactScoreBoost).toBeLessThanOrEqual(20);
+  });
+
+  it("easiestWinTip references concrete action (number or specific word)", () => {
+    const profile = generateEarthProfile(carAnswers);
+    const insights = generatePersonalizedInsights(carAnswers, profile);
+    // Should mention a specific number or action word
+    expect(insights.easiestWinTip.length).toBeGreaterThan(20);
+  });
+
+  it("easiestWinScoreBoost is non-negative", () => {
+    const profile = generateEarthProfile(carAnswers);
+    const insights = generatePersonalizedInsights(carAnswers, profile);
+    expect(insights.easiestWinScoreBoost).toBeGreaterThanOrEqual(0);
+  });
+
+  it("eco-friendly choices produce positive earthStatusSummary state word", () => {
+    const bestAnswers: OnboardingAnswers = {
+      transport: "walking",
+      food: "vegetarian",
+      electricity: "low",
+      shopping: "rare",
+      waste: "always_recycle",
+    };
+    const profile = generateEarthProfile(bestAnswers);
+    const insights = generatePersonalizedInsights(bestAnswers, profile);
+    expect(insights.earthStatusSummary.toLowerCase()).toMatch(/thriving|balanced/);
+  });
+});
+

@@ -74,6 +74,9 @@ function getGeminiClient(): GoogleGenerativeAI {
   return new GoogleGenerativeAI(key);
 }
 
+let lastRequestTime = 0;
+const RATE_LIMIT_MS = 1500; // 1.5 second debounce
+
 /**
  * Send a message to the Eco Coach and return a streaming result.
  * @param userMessage - The user's message text
@@ -85,6 +88,12 @@ export async function sendEcoCoachMessage(
   history: ChatMessage[],
   userContext?: string,
 ): Promise<GenerateContentStreamResult> {
+  const now = Date.now();
+  if (now - lastRequestTime < RATE_LIMIT_MS) {
+    throw new Error("Eco Coach is thinking... Please wait a moment before sending another message.");
+  }
+  lastRequestTime = now;
+
   const genAI = getGeminiClient();
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",

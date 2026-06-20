@@ -23,6 +23,17 @@ import type { OnboardingAnswers, EarthProfile } from "./carbon";
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
+// Guard: fail loudly in dev if env vars are missing rather than silently in prod
+if (
+  import.meta.env.DEV &&
+  !import.meta.env.VITE_FIREBASE_API_KEY
+) {
+  console.error(
+    "[Vasudha] VITE_FIREBASE_API_KEY is not set. " +
+    "Copy .env.example to .env and fill in your Firebase credentials.",
+  );
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -81,6 +92,16 @@ export async function saveUserProfile(
   answers: OnboardingAnswers,
   profile: EarthProfile,
 ): Promise<void> {
+  // Input validation
+  if (!userId || typeof userId !== "string" || userId.trim().length === 0) {
+    console.warn("[Vasudha] saveUserProfile: invalid userId, skipping Firestore write.");
+    return;
+  }
+  if (!answers || !profile) {
+    console.warn("[Vasudha] saveUserProfile: missing answers or profile, skipping write.");
+    return;
+  }
+
   const db = getDB();
   await setDoc(doc(db, "users", userId), {
     userId,
