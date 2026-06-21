@@ -8,14 +8,12 @@ import {
 import { TrendingUp, Star, Zap, Target, Globe2, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/vasudha/AppShell";
 import { I18nProvider, useTranslation } from "@/lib/i18n";
-import { getCachedProfile, getCachedAnswers } from "@/lib/user";
 import {
   type EarthProfile,
-  type OnboardingAnswers,
-  generateEarthProfile,
   generatePersonalizedInsights,
   type PersonalizedInsights,
 } from "@/lib/carbon";
+import { useCarbonProfile } from "@/hooks/useCarbonProfile";
 import thriving from "@/assets/earth-thriving.png";
 import balanced from "@/assets/earth-balanced.png";
 import struggling from "@/assets/earth-struggling.png";
@@ -235,61 +233,14 @@ function PersonalizedActions({
 
 function DashboardPage() {
   const { t } = useTranslation();
-  const [profile, setProfile] = useState<EarthProfile | null>(null);
-  const [answers, setAnswers] = useState<OnboardingAnswers | null>(null);
-  const [insights, setInsights] = useState<PersonalizedInsights | null>(null);
+  const { profile, answers, insights, isDemo } = useCarbonProfile();
   const [weeklyData, setWeeklyData] = useState<ReturnType<typeof generateWeeklyData>>([]);
 
   useEffect(() => {
-    const cachedProfile = getCachedProfile<EarthProfile & { _insights?: PersonalizedInsights }>();
-    const cachedAnswers = getCachedAnswers<OnboardingAnswers>();
-
-    if (cachedProfile) {
-      setProfile(cachedProfile);
-      setWeeklyData(generateWeeklyData(cachedProfile.score));
-
-      if (cachedAnswers) {
-        setAnswers(cachedAnswers);
-        const generatedInsights = cachedProfile._insights ?? generatePersonalizedInsights(cachedAnswers, cachedProfile);
-        setInsights(generatedInsights);
-      } else {
-        // No answers cached — use profile topSource for a basic summary
-        const fallbackInsights: PersonalizedInsights = {
-          earthStatusSummary: `Your Earth is ${cachedProfile.state}. Complete onboarding to get fully personalised insights.`,
-          biggestImpactArea: cachedProfile.topSource,
-          biggestImpactLabel: cachedProfile.topSourceLabel,
-          biggestImpactScoreBoost: 8,
-          bestArea: "waste",
-          bestAreaLabel: "Waste & Recycling",
-          easiestWin: cachedProfile.topSource,
-          easiestWinLabel: cachedProfile.topSourceLabel,
-          easiestWinScoreBoost: 5,
-          easiestWinTip: cachedProfile.improvement,
-        };
-        setInsights(fallbackInsights);
-      }
-    } else {
-      // Demo profile
-      const demo = generateEarthProfile({
-        transport: "public",
-        food: "vegetarian",
-        electricity: "average",
-        shopping: "monthly",
-        waste: "sometimes",
-      });
-      const demoAnswers: OnboardingAnswers = {
-        transport: "public",
-        food: "vegetarian",
-        electricity: "average",
-        shopping: "monthly",
-        waste: "sometimes",
-      };
-      setProfile(demo);
-      setAnswers(demoAnswers);
-      setWeeklyData(generateWeeklyData(demo.score));
-      setInsights(generatePersonalizedInsights(demoAnswers, demo));
+    if (profile) {
+      setWeeklyData(generateWeeklyData(profile.score));
     }
-  }, []);
+  }, [profile]);
 
   if (!profile) return null;
 
@@ -443,7 +394,7 @@ function DashboardPage() {
           className="glass-card rounded-3xl p-6 lg:col-span-3"
         >
           <p className="mb-5 font-display text-base font-bold">{t("recommended_actions")}</p>
-          {insights && profile ? (
+          {insights && profile && !isDemo ? (
             <PersonalizedActions insights={insights} profile={profile} />
           ) : (
             <p className="text-sm" style={{ color: "var(--color-muted-foreground)" }}>

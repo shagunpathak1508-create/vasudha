@@ -212,3 +212,37 @@
 @utility animate-spin-slow { animation: spin-slow 80s linear infinite; }
 @utility animate-float-y { animation: float-y 6s ease-in-out infinite; }
 @utility animate-pulse-glow { animation: pulse-glow 6s ease-in-out infinite; }
+@utility animate-drift { animation: drift 12s ease-in infinite; }
+
+/* ─── Skip-to-content link (WCAG 2.1 AA) ────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 1rem;
+  z-index: 9999;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  background: var(--color-secondary);
+  color: var(--color-secondary-foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ─── Reduced-motion: disable all animations ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

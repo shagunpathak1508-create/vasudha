@@ -6,8 +6,11 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "postbuild": "node scripts/generate-spa-shell.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "preview:firebase": "firebase emulators:start --only hosting",
+    "deploy:hosting": "npm run build && firebase deploy --only hosting",
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",

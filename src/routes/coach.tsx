@@ -253,6 +253,7 @@ function CoachPage() {
             onChange={(e) => setInput(e.target.value)}
             placeholder={t("coach_placeholder")}
             disabled={sending}
+            aria-busy={sending}
             className="flex-1 rounded-full bg-white/8 px-5 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
             aria-label="Message input"
             id="coach-input"

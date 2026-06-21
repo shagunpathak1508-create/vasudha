@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/vasudha/AppShell";
 import { I18nProvider, useTranslation } from "@/lib/i18n";
-import { joinChallenge, updateChallengeProgress, getChallengeProgress } from "@/lib/firebase";
-import { getOrCreateUserId } from "@/lib/user";
+import { useChallengeProgress } from "@/hooks/useChallengeProgress";
 import type { ChallengeProgress } from "@/lib/firebase";
 
 export const Route = createFileRoute("/challenges")({
@@ -227,44 +226,7 @@ function ChallengeCard({ challenge, progress, onJoin, onProgress, lang }: Challe
 
 function ChallengesPage() {
   const { t, lang } = useTranslation();
-  const [progressMap, setProgressMap] = useState<Record<string, ChallengeProgress>>({});
-  const [userId] = useState(() => getOrCreateUserId());
-
-  // Load Firestore progress
-  useEffect(() => {
-    getChallengeProgress(userId)
-      .then(setProgressMap)
-      .catch((err) => console.warn("Firestore read failed:", err));
-  }, [userId]);
-
-  async function handleJoin(challengeId: string) {
-    const entry: ChallengeProgress = {
-      challengeId,
-      joinedAt: new Date(),
-      daysCompleted: 0,
-      completed: false,
-    };
-    setProgressMap((prev) => ({ ...prev, [challengeId]: entry }));
-    try {
-      await joinChallenge(userId, challengeId);
-    } catch (err) {
-      console.warn("Firestore join failed:", err);
-    }
-  }
-
-  async function handleProgress(challengeId: string, days: number) {
-    const prev = progressMap[challengeId];
-    if (!prev) return;
-    const updated: ChallengeProgress = { ...prev, daysCompleted: days, completed: days >= 7 };
-    setProgressMap((p) => ({ ...p, [challengeId]: updated }));
-    try {
-      await updateChallengeProgress(userId, challengeId, days);
-    } catch (err) {
-      console.warn("Firestore update failed:", err);
-    }
-  }
-
-  const completedCount = Object.values(progressMap).filter((p) => p.completed).length;
+  const { progressMap, handleJoin, handleProgress, completedCount, recentlyCompletedId } = useChallengeProgress();
 
   return (
     <div className="relative min-h-screen px-5 py-10 sm:px-8">
@@ -276,6 +238,10 @@ function ChallengesPage() {
             "radial-gradient(ellipse at 20% 80%, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 45%)",
         }}
       />
+
+      <div aria-live="assertive" className="sr-only" role="alert">
+        {recentlyCompletedId && `Badge earned for ${CHALLENGES.find((c) => c.id === recentlyCompletedId)?.badgeName}`}
+      </div>
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="mb-8">

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { I18nProvider, useTranslation } from "@/lib/i18n";
@@ -316,6 +316,28 @@ const SCENES: Record<string, React.FC<{ active: boolean }>> = {
 function LearnPage() {
   const { t, lang } = useTranslation();
   const [selected, setSelected] = useState<(typeof CATEGORIES)[number] | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  // Focus management for detail panel modal
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!selected) return;
+      if (e.key === "Escape") {
+        setSelected(null);
+        triggerRefs.current[selected.id]?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [selected]);
+
+  useEffect(() => {
+    if (selected) {
+      // Focus the close button when panel opens
+      closeBtnRef.current?.focus();
+    }
+  }, [selected]);
 
   return (
     <div className="relative min-h-screen bg-background text-foreground">
@@ -356,6 +378,9 @@ function LearnPage() {
               whileHover={{ y: -6, scale: 1.04 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setSelected(cat)}
+              ref={(el) => {
+                triggerRefs.current[cat.id] = el;
+              }}
               role="listitem"
               aria-label={`Explore ${cat.titleEn}`}
               className="glass-card group relative flex flex-col items-center gap-3 rounded-2xl p-6 text-center transition-all"
@@ -408,8 +433,12 @@ function LearnPage() {
                       {lang === "hi" ? selected.titleHi : selected.titleEn}
                     </h2>
                     <button
-                      onClick={() => setSelected(null)}
-                      className="rounded-full p-1 text-muted-foreground transition hover:text-foreground"
+                      ref={closeBtnRef}
+                      onClick={() => {
+                        setSelected(null);
+                        triggerRefs.current[selected!.id]?.focus();
+                      }}
+                      className="rounded-full p-1 text-muted-foreground transition hover:text-foreground focus-visible:ring-2 focus-visible:ring-accent"
                       aria-label="Close panel"
                     >
                       <X className="h-5 w-5" />

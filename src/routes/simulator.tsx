@@ -419,6 +419,12 @@ function SimulatorPage() {
         </p>
       </motion.div>
 
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {activeCount > 0 
+          ? `Simulated future score is ${result.futureScore}. Carbon reduced by ${result.carbonReductionPercent}%.`
+          : "Simulator active. Toggle changes to see projected impact."}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-5">
         {/* ── Controls ── */}
         <motion.div
@@ -530,7 +536,7 @@ function SimulatorPage() {
           </div>
 
           {/* Metric counters */}
-          <div className="mt-1 grid grid-cols-3 gap-3">
+          <div className="mt-1 grid grid-cols-3 gap-3" aria-live="polite" aria-atomic="true">
             {[
               { label: t("carbon_reduction"), value: result.carbonReductionPercent, suffix: "%", color: "var(--color-leaf-glow)" },
               { label: t("trees_equivalent"), value: result.treesEquivalent, suffix: "", color: "var(--color-accent)" },

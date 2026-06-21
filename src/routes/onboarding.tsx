@@ -375,14 +375,21 @@ function OnboardingPage() {
 
         {stage === "insight" && currentAnswer && (
           <div key={`insight-${chapterIdx}`} className="flex justify-center">
-            <InsightPanel
-              icon={chapter.insights[currentAnswer as keyof typeof chapter.insights]?.icon ?? chapter.intro.icon}
-              headline={chapter.insights[currentAnswer as keyof typeof chapter.insights]?.headline ?? ""}
-              body={chapter.insights[currentAnswer as keyof typeof chapter.insights]?.body ?? ""}
-              impactTag={chapter.insights[currentAnswer as keyof typeof chapter.insights]?.impactTag}
-              onContinue={handleInsightContinue}
-              continueLabel={isLast ? "Reveal My Earth ✨" : `Begin Chapter ${chapterIdx + 2} →`}
-            />
+            {(() => {
+              type InsightShape = { icon?: string; headline: string; body: string; impactTag?: string };
+              const insightMap = chapter.insights as Record<string, InsightShape | undefined>;
+              const insight = insightMap[currentAnswer];
+              return (
+                <InsightPanel
+                  icon={insight?.icon ?? chapter.intro.icon}
+                  headline={insight?.headline ?? ""}
+                  body={insight?.body ?? ""}
+                  impactTag={insight?.impactTag}
+                  onContinue={handleInsightContinue}
+                  continueLabel={isLast ? "Reveal My Earth ✨" : `Begin Chapter ${chapterIdx + 2} →`}
+                />
+              );
+            })()}
           </div>
         )}
       </AnimatePresence>

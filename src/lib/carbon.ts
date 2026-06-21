@@ -1,6 +1,9 @@
 // ─── Carbon Calculator ───────────────────────────────────────────────────────
 // Pure functions only — no side effects, easily testable with Vitest.
 
+// ─── Domain Types ────────────────────────────────────────────────────────────
+
+/** Primary mode of transport chosen by the user during onboarding. */
 export type TransportChoice =
   | "walking"
   | "cycling"
@@ -9,11 +12,22 @@ export type TransportChoice =
   | "car"
   | "flights";
 
+/** Primary dietary pattern chosen by the user during onboarding. */
 export type FoodChoice = "vegetarian" | "eggetarian" | "mixed" | "heavy_meat";
+
+/** Typical monthly household electricity consumption level. */
 export type ElectricityChoice = "low" | "average" | "high" | "heavy_ac";
+
+/** Frequency of non-essential consumer purchases. */
 export type ShoppingChoice = "rare" | "monthly" | "frequent";
+
+/** Household waste sorting and recycling practice. */
 export type WasteChoice = "always_recycle" | "sometimes" | "rarely";
 
+/**
+ * The complete set of answers collected during the onboarding flow.
+ * Each field maps to one of the five lifestyle category types.
+ */
 export interface OnboardingAnswers {
   transport: TransportChoice;
   food: FoodChoice;
@@ -22,17 +36,35 @@ export interface OnboardingAnswers {
   waste: WasteChoice;
 }
 
+/**
+ * Qualitative Earth health state derived from the Vasudha Health Index score.
+ * - `thriving`  — score ≥ 75
+ * - `balanced`  — score ≥ 50
+ * - `struggling` — score ≥ 30
+ * - `critical`  — score < 30
+ */
 export type EarthState = "thriving" | "balanced" | "struggling" | "critical";
 
+/**
+ * Full Earth health profile for a user, computed from their onboarding answers.
+ * Used throughout the dashboard, simulator, and insight panels.
+ */
 export interface EarthProfile {
-  score: number; // 0–100 (100 = best)
+  /** Vasudha Health Index — 0 (worst) to 100 (best). */
+  score: number;
+  /** Qualitative health state label. */
   state: EarthState;
+  /** Key of the highest-impact emission category (e.g. "transport"). */
   topSource: string;
+  /** Human-readable label for the top emission source. */
   topSourceLabel: string;
+  /** Actionable improvement suggestion for the top source. */
   improvement: string;
-  categoryScores: Record<string, number>; // 0–100 per category
+  /** Per-category health scores (0–100). Keys: transport, food, electricity, shopping, waste. */
+  categoryScores: Record<string, number>;
 }
 
+/** Simulator toggle state — one boolean per lifestyle-change action. */
 export interface SimulatorToggles {
   publicTransport: boolean;
   reduceAC: boolean;
@@ -41,12 +73,31 @@ export interface SimulatorToggles {
   plantBased: boolean;
 }
 
+/** Result of running the Future Earth Simulator for a given toggle/timeline combination. */
 export interface SimulationResult {
+  /** Projected Vasudha Health Index after applying the chosen changes. */
   futureScore: number;
+  /** Estimated percentage reduction in total carbon emissions. */
   carbonReductionPercent: number;
+  /** Number of trees whose annual absorption equals the CO₂ saved. */
   treesEquivalent: number;
+  /** Approximate kilograms of CO₂ saved over the chosen timeline. */
   co2SavedKg: number;
 }
+
+// ─── Named Constants ─────────────────────────────────────────────────────────
+
+/**
+ * Average annual CO₂ emissions (in kg) for an Indian resident.
+ * Source: World Bank / IEA — ~1.9 tonnes/year normalised to 100-point scale.
+ */
+export const AVERAGE_INDIAN_CO2_KG_YEAR = 1900;
+
+/**
+ * Approximate kg of CO₂ absorbed per tree per year.
+ * Used to calculate "trees equivalent" metrics.
+ */
+export const TREE_CO2_KG_YEAR = 21;
 
 // ─── Emission weights (higher = worse) ──────────────────────────────────────
 
@@ -85,7 +136,7 @@ const WASTE_WEIGHTS: Record<WasteChoice, number> = {
   rarely: 70,
 };
 
-// Category contribution to overall score (must sum to 1.0)
+/** Category contribution to overall score (must sum to 1.0). */
 const CATEGORY_WEIGHTS = {
   transport: 0.35,
   food: 0.25,
@@ -94,12 +145,25 @@ const CATEGORY_WEIGHTS = {
   waste: 0.08,
 };
 
-/** Convert a raw emission weight (0–100) to a health score (0–100) */
+/**
+ * Convert a raw emission weight (0–100) to a health score (0–100).
+ * Higher weight = higher emissions = lower score.
+ */
 function toScore(weight: number): number {
   return Math.round(100 - weight);
 }
 
-/** Calculate per-category health scores (0–100) */
+/**
+ * Calculate per-category health scores (0–100) from onboarding answers.
+ * Each score is 100 minus the emission weight for that category.
+ *
+ * @param answers - The user's completed onboarding answers
+ * @returns A record mapping category keys to their 0–100 health scores
+ *
+ * @example
+ * getCategoryScores({ transport: "cycling", food: "vegetarian", ... })
+ * // → { transport: 98, food: 90, electricity: 65, shopping: 65, waste: 65 }
+ */
 export function getCategoryScores(
   answers: OnboardingAnswers,
 ): Record<string, number> {
@@ -112,7 +176,13 @@ export function getCategoryScores(
   };
 }
 
-/** Calculate the overall Vasudha Health Index (0–100) */
+/**
+ * Calculate the overall Vasudha Health Index (0–100) from onboarding answers.
+ * Uses a weighted average of all five category emission weights.
+ *
+ * @param answers - The user's completed onboarding answers
+ * @returns Integer score from 0 (highest emissions) to 100 (lowest emissions)
+ */
 export function calculateScore(answers: OnboardingAnswers): number {
   const t = TRANSPORT_WEIGHTS[answers.transport] * CATEGORY_WEIGHTS.transport;
   const f = FOOD_WEIGHTS[answers.food] * CATEGORY_WEIGHTS.food;
@@ -125,7 +195,12 @@ export function calculateScore(answers: OnboardingAnswers): number {
   return Math.round(Math.max(0, Math.min(100, 100 - totalEmission)));
 }
 
-/** Determine Earth state from health score */
+/**
+ * Determine the qualitative Earth health state from a numeric score.
+ *
+ * @param score - Vasudha Health Index (0–100)
+ * @returns One of: "thriving" | "balanced" | "struggling" | "critical"
+ */
 export function getEarthState(score: number): EarthState {
   if (score >= 75) return "thriving";
   if (score >= 50) return "balanced";
@@ -133,7 +208,7 @@ export function getEarthState(score: number): EarthState {
   return "critical";
 }
 
-/** Identify the highest-impact emission source */
+/** Identify the highest-impact emission source from the user's answers. */
 function getTopSource(answers: OnboardingAnswers): {
   key: string;
   label: string;
@@ -183,7 +258,13 @@ const IMPROVEMENT_TIPS: Record<string, string> = {
     "Start composting food scraps — diverts up to 50% of household waste from landfill.",
 };
 
-/** Generate Earth profile with top source and improvement suggestion */
+/**
+ * Generate a full Earth profile including score, state, top emission source,
+ * and improvement tip from the user's onboarding answers.
+ *
+ * @param answers - The user's completed onboarding answers
+ * @returns A fully populated {@link EarthProfile} object
+ */
 export function generateEarthProfile(
   answers: OnboardingAnswers,
 ): EarthProfile {
@@ -204,17 +285,31 @@ export function generateEarthProfile(
 
 // ─── Personalized Insights ───────────────────────────────────────────────────
 
+/**
+ * A rich set of personalized sustainability insights derived from the user's
+ * Earth profile and onboarding answers. Displayed on the dashboard result screen.
+ */
 export interface PersonalizedInsights {
-  earthStatusSummary: string; // "Your Earth is balanced but AC usage is holding it back."
+  /** Summary sentence describing the user's Earth state and top impact driver. */
+  earthStatusSummary: string;
+  /** Category key of the area with the largest potential improvement. */
   biggestImpactArea: string;
+  /** Human-readable label for the biggest impact area. */
   biggestImpactLabel: string;
-  biggestImpactScoreBoost: number; // estimated VHI points if fixed
+  /** Estimated VHI point gain if the biggest impact area is fully addressed. */
+  biggestImpactScoreBoost: number;
+  /** Category key of the area where the user already performs best. */
   bestArea: string;
+  /** Human-readable label for the best area. */
   bestAreaLabel: string;
+  /** Category key representing the easiest quick win. */
   easiestWin: string;
+  /** Human-readable label for the easiest win. */
   easiestWinLabel: string;
+  /** Estimated VHI point gain from the easiest win action. */
   easiestWinScoreBoost: number;
-  easiestWinTip: string; // specific actionable sentence
+  /** Specific, actionable tip for the easiest win. */
+  easiestWinTip: string;
 }
 
 // Human-readable choice labels for insight sentences
@@ -338,7 +433,14 @@ function buildEarthStatusSummary(
   return `Your Earth is ${stateWord}. Improving waste sorting and recycling is the quickest way to strengthen your Vasudha Health Index.`;
 }
 
-/** Generate answer-specific personalized insights for dashboard and result screen */
+/**
+ * Generate answer-specific personalized insights for the dashboard and result screen.
+ * Identifies the user's biggest impact area, best performing area, and easiest quick win.
+ *
+ * @param answers - The user's completed onboarding answers
+ * @param profile - The pre-computed {@link EarthProfile} for this user
+ * @returns A {@link PersonalizedInsights} object with tailored summaries and tips
+ */
 export function generatePersonalizedInsights(
   answers: OnboardingAnswers,
   profile: EarthProfile,
@@ -351,7 +453,6 @@ export function generatePersonalizedInsights(
   const [bestKey] = sorted[sorted.length - 1];
 
   // Easiest win: highest score boost relative to effort
-  // We pick mid-range (not already best, not worst — if worst has huge boost pick that)
   const worstBoost = buildEasiestWinTip(worstKey, answers).boost;
   const midKey = sorted.length > 2 ? sorted[1][0] : worstKey;
   const midBoost = buildEasiestWinTip(midKey, answers).boost;
@@ -376,7 +477,7 @@ export function generatePersonalizedInsights(
 
 // ─── Future Earth Simulator ──────────────────────────────────────────────────
 
-/** Reduction factors per toggle (as emission weight reduction 0–1) */
+/** Reduction factors per toggle (as emission weight reduction 0–1). */
 const TOGGLE_REDUCTIONS: Record<keyof SimulatorToggles, number> = {
   publicTransport: 0.28, // 28% emission reduction
   reduceAC: 0.15,
@@ -392,7 +493,19 @@ const TIMELINE_MULTIPLIERS: Record<string, number> = {
   "36": 2.2,
 };
 
-/** Simulate future score based on lifestyle changes and timeline */
+/**
+ * Simulate a user's projected future Earth score based on lifestyle changes and a time horizon.
+ * Uses proportional emission reduction logic with a timeline multiplier.
+ *
+ * @param currentScore - The user's current Vasudha Health Index (0–100)
+ * @param toggles - Which lifestyle changes are active
+ * @param months - Time horizon: 0 (today), 6 (6 months), 12 (1 year), or 36 (3 years)
+ * @returns A {@link SimulationResult} with future score, CO₂ savings, and tree equivalents
+ *
+ * @example
+ * simulateReductions(52, { publicTransport: true, plantBased: true, ... }, 12)
+ * // → { futureScore: 72, carbonReductionPercent: 41, treesEquivalent: 18, co2SavedKg: 380 }
+ */
 export function simulateReductions(
   currentScore: number,
   toggles: SimulatorToggles,
@@ -420,11 +533,11 @@ export function simulateReductions(
     ((currentEmission - reducedEmission) / Math.max(currentEmission, 1)) * 100,
   );
 
-  // Approx CO2 saved: average Indian emits ~1.9 tonnes/year → normalised
+  // CO₂ saved: normalised against AVERAGE_INDIAN_CO2_KG_YEAR
   const co2SavedKg = Math.round(
     (currentEmission - reducedEmission) * 19 * (months / 12 || 0.1),
   );
-  const treesEquivalent = Math.round(co2SavedKg / 21); // 1 tree ≈ 21 kg CO2/year
+  const treesEquivalent = Math.round(co2SavedKg / TREE_CO2_KG_YEAR);
 
   return {
     futureScore,

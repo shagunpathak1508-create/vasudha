@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   Globe2,
   LayoutDashboard,
@@ -12,7 +13,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
-import type { ReactNode } from "react";
 
 const NAV_ITEMS = [
   { to: "/dashboard", icon: LayoutDashboard, key: "nav_dashboard" as const },
@@ -26,6 +26,17 @@ const NAV_ITEMS = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { t, lang, setLang } = useTranslation();
   const location = useLocation();
+  const [routeAnnouncement, setRouteAnnouncement] = useState("");
+
+  useEffect(() => {
+    // Announce route changes to screen readers
+    const currentNav = NAV_ITEMS.find((nav) => nav.to === location.pathname);
+    if (currentNav) {
+      setRouteAnnouncement(`Navigated to ${t(currentNav.key)}`);
+    } else {
+      setRouteAnnouncement("Page changed");
+    }
+  }, [location.pathname, t]);
 
   return (
     <div className="relative flex min-h-screen w-full bg-background text-foreground">
@@ -135,6 +146,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         id="main-content"
         tabIndex={-1}
       >
+        <div aria-live="polite" className="sr-only" role="status" aria-atomic="true">
+          {routeAnnouncement}
+        </div>
         {children}
       </main>
     </div>

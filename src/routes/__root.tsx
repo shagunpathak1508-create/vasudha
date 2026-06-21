@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { ErrorBoundary } from "../components/vasudha/ErrorBoundary";
 
 function NotFoundComponent() {
   return (
@@ -77,14 +78,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Vasudha — Your Eco Companion" },
+      { name: "description", content: "Track your carbon footprint, learn sustainability habits, and grow with Vasudha — your personal eco companion." },
+      { name: "author", content: "Vasudha" },
+      { property: "og:title", content: "Vasudha — Your Eco Companion" },
+      { property: "og:description", content: "Track your carbon footprint and build eco-friendly habits with Vasudha." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -112,6 +112,10 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
+        {/* Skip-to-content link for keyboard and screen reader users */}
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         {children}
         <Scripts />
       </body>
@@ -124,8 +128,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {/* ErrorBoundary wraps all routes — errors in child pages are caught gracefully */}
+      <ErrorBoundary>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }
